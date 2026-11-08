@@ -1,122 +1,85 @@
 import { useMemo, useState } from 'react';
-import { constitutionArticles, popularTopics } from './data/constitution';
+import { constitutionArticles } from './data/constitution';
+
+type Section = 'Overview' | 'Lawyers' | 'FAQs' | 'Case law' | 'Court guides' | 'Counties' | 'Legal assistant';
+type Lawyer = { name: string; practice: string; county: string; languages: string; mock: true };
+
+const sections: Section[] = ['Overview', 'Lawyers', 'FAQs', 'Case law', 'Court guides', 'Counties', 'Legal assistant'];
+const lawyers: Lawyer[] = [
+  { name: 'Sample Advocate A', practice: 'Family & children', county: 'Nairobi', languages: 'English, Kiswahili', mock: true },
+  { name: 'Sample Advocate B', practice: 'Employment & labour', county: 'Mombasa', languages: 'English, Kiswahili', mock: true },
+  { name: 'Sample Advocate C', practice: 'Public interest & constitutional law', county: 'Kisumu', languages: 'English, Dholuo', mock: true },
+];
+const faqs = [
+  ['What is the Constitution of Kenya?', 'It is the supreme law of Kenya. It establishes government, protects rights and sets out duties of public institutions. See Articles 2 and 10.'],
+  ['How can I seek enforcement of a constitutional right?', 'Article 22 provides for court proceedings to enforce the Bill of Rights. The correct procedure depends on the facts and applicable rules; consult a Kenyan advocate or legal aid provider.'],
+  ['Can I get free legal help?', 'Eligibility and availability vary. Contact the National Legal Aid Service or a local legal aid organisation and ask about current eligibility, locations and services.'],
+  ['What should I do if I am arrested?', 'Ask calmly why you are being arrested, avoid resisting, and request to contact an advocate and a person of your choice. Article 49 sets out arrested-person rights. For immediate danger, contact local emergency services.'],
+  ['Is this app a substitute for an advocate?', 'No. It offers general legal information only. It does not assess your evidence, give legal advice, or create an advocate-client relationship.'],
+];
+const cases = [
+  { name: 'Mitu-Bell Welfare Society v Kenya Airports Authority & 2 others', citation: '[2021] KESC 34 (KLR)', note: 'Supreme Court decision concerning remedies and socio-economic rights. Read the judgment and verify its scope before relying on it.' },
+  { name: 'Independent Electoral and Boundaries Commission v Maina Kiai & 5 others', citation: '[2017] eKLR', note: 'Supreme Court decision concerning the finality of constituency tallying and declaration of election results.' },
+  { name: 'Raila Amolo Odinga & another v Independent Electoral and Boundaries Commission & 2 others', citation: '[2017] eKLR', note: 'Presidential election petition decision. Consult the full judgment for the facts, issues and holdings.' },
+];
+const guides = [
+  { title: 'Finding the right court', steps: ['Identify the legal issue and the remedy you need.', 'Check jurisdiction, current court rules, filing deadlines and fees.', 'Seek advice from an advocate or court registry; do not rely on this overview to determine jurisdiction.'] },
+  { title: 'Preparing for a court visit', steps: ['Bring identification, relevant documents and copies.', 'Confirm the hearing date, courtroom, accessibility and any filing requirements with the registry.', 'Arrive early and follow directions from court staff. Keep originals safe.'] },
+  { title: 'Understanding a court case', steps: ['A case usually begins with documents filed under the applicable procedure.', 'The other party may respond; the court may give directions, hear evidence or submissions, and issue a decision.', 'Procedures differ by court and case type. Confirm the current rules and deadlines with a qualified advocate.'] },
+];
+const counties = ['Mombasa','Kwale','Kilifi','Tana River','Lamu','Taita-Taveta','Garissa','Wajir','Mandera','Marsabit','Isiolo','Meru','Tharaka-Nithi','Embu','Kitui','Machakos','Makueni','Nyandarua','Nyeri','Kirinyaga','Murang’a','Kiambu','Turkana','West Pokot','Samburu','Trans Nzoia','Uasin Gishu','Elgeyo-Marakwet','Nandi','Baringo','Laikipia','Nakuru','Narok','Kajiado','Kericho','Bomet','Kakamega','Vihiga','Bungoma','Busia','Siaya','Kisumu','Homa Bay','Migori','Kisii','Nyamira','Nairobi'];
 
 function App() {
+  const [section, setSection] = useState<Section>('Overview');
   const [query, setQuery] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string>('All');
-  const [selectedId, setSelectedId] = useState<number>(19);
+  const [category, setCategory] = useState('All');
+  const [selectedId, setSelectedId] = useState(19);
+  const [authOpen, setAuthOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'Sign in' | 'Create account'>('Sign in');
+  const [user, setUser] = useState('');
+  const [county, setCounty] = useState('Nairobi');
+  const [question, setQuestion] = useState('');
+  const [answer, setAnswer] = useState('');
 
-  const filteredArticles = useMemo(() => {
-    return constitutionArticles.filter((article) => {
-      const matchesCategory = selectedCategory === 'All' || article.category === selectedCategory;
-      const matchesQuery =
-        query.trim() === '' ||
-        article.title.toLowerCase().includes(query.toLowerCase()) ||
-        article.summary.toLowerCase().includes(query.toLowerCase()) ||
-        article.keyPoints.some((point) => point.toLowerCase().includes(query.toLowerCase()));
+  const filteredArticles = useMemo(() => constitutionArticles.filter((article) => {
+    const text = `${article.title} ${article.summary} ${article.keyPoints.join(' ')} ${article.article}`.toLowerCase();
+    return (category === 'All' || article.category === category) && text.includes(query.toLowerCase());
+  }), [category, query]);
+  const selectedArticle = filteredArticles.find((item) => item.id === selectedId) ?? filteredArticles[0] ?? constitutionArticles[0];
 
-      return matchesCategory && matchesQuery;
-    });
-  }, [query, selectedCategory]);
+  function askAssistant() {
+    const q = question.trim().toLowerCase();
+    if (!q) { setAnswer('Enter a general legal-information question. Please do not include names, ID numbers, addresses, case documents or other sensitive personal details.'); return; }
+    const match = constitutionArticles.find((item) => `${item.title} ${item.summary} ${item.keyPoints.join(' ')}`.toLowerCase().split(/\W+/).some((word) => word.length > 4 && q.includes(word)));
+    if (q.includes('arrest') || q.includes('police')) setAnswer('General information: Article 49 sets out rights of arrested persons, including being informed promptly of the reason for arrest and the right to communicate with an advocate and other necessary assistance. Facts and procedures matter. Contact a Kenyan advocate or legal aid service promptly. Source: Constitution of Kenya, 2010, Article 49.');
+    else if (match) setAnswer(`${match.summary} Key points: ${match.keyPoints.join('; ')} Source: ${match.source}. This automated demo is not legal advice; check the full Constitution and consult a qualified Kenyan advocate for your circumstances.`);
+    else setAnswer('I can only provide limited general information from the app’s curated constitutional topics. Try a topic such as equality, privacy, fair hearing, children, expression or access to information. For advice about a specific situation, contact a qualified Kenyan advocate or legal aid provider.');
+  }
 
-  const selectedArticle =
-    filteredArticles.find((article) => article.id === selectedId) ?? filteredArticles[0] ?? constitutionArticles[0];
-
-  return (
-    <div className="app-shell">
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Kenya Legal App</p>
-          <h1>Constitutional Rights Guide</h1>
-        </div>
-        <div className="status-pill">Updated for 2010 Constitution</div>
-      </header>
-
-      <main className="main-grid">
-        <aside className="sidebar panel">
-          <div className="search-wrap">
-            <input
-              type="text"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search a right or topic"
-              aria-label="Search legal topics"
-            />
-          </div>
-
-          <div className="filters">
-            <button className={selectedCategory === 'All' ? 'active' : ''} onClick={() => setSelectedCategory('All')}>
-              All
-            </button>
-            {popularTopics.map((topic) => (
-              <button
-                key={topic}
-                className={selectedCategory === topic ? 'active' : ''}
-                onClick={() => setSelectedCategory(topic)}
-              >
-                {topic}
-              </button>
-            ))}
-          </div>
-
-          <div className="list">
-            {filteredArticles.length === 0 ? (
-              <div className="empty-state">No articles matched your search.</div>
-            ) : (
-              filteredArticles.map((article) => (
-                <button
-                  key={article.id}
-                  className={`article-item ${selectedArticle.id === article.id ? 'selected' : ''}`}
-                  onClick={() => setSelectedId(article.id)}
-                >
-                  <span className="article-number">{article.article}</span>
-                  <strong>{article.title}</strong>
-                  <small>{article.category}</small>
-                </button>
-              ))
-            )}
-          </div>
-        </aside>
-
-        <section className="content panel">
-          <div className="content-header">
-            <span className="chip">{selectedArticle.category}</span>
-            <span className="article-ref">{selectedArticle.article}</span>
-          </div>
-
-          <h2>{selectedArticle.title}</h2>
-          <p className="summary">{selectedArticle.summary}</p>
-
-          <div className="stats-grid">
-            <div className="stat-box">
-              <label>Type</label>
-              <strong>{selectedArticle.category}</strong>
-            </div>
-            <div className="stat-box">
-              <label>Legal Source</label>
-              <strong>{selectedArticle.source}</strong>
-            </div>
-          </div>
-
-          <div className="section-block">
-            <h3>Key points</h3>
-            <ul>
-              {selectedArticle.keyPoints.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="section-block disclaimer">
-            <h3>Important disclaimer</h3>
-            <p>
-              This app provides general information based on the Constitution of Kenya, 2010. It is not legal advice and does not replace consultation with a qualified Kenyan lawyer.
-            </p>
-          </div>
-        </section>
-      </main>
-    </div>
-  );
+  return <div className="product-shell">
+    <header className="product-header">
+      <a className="brand" href="#home" onClick={() => setSection('Overview')}><span className="brand-mark">K</span><span><b>Haki</b><small>KENYA LEGAL GUIDE</small></span></a>
+      <nav className="main-nav" aria-label="Main navigation">{sections.map((item) => <button key={item} className={section === item ? 'nav-active' : ''} onClick={() => setSection(item)}>{item}</button>)}</nav>
+      <button className="account-button" onClick={() => user ? setUser('') : setAuthOpen(true)}>{user ? `Sign out · ${user}` : 'Sign in'}</button>
+    </header>
+    <main className="product-main">
+      <div className="welcome-row"><div><p className="eyebrow">A clear starting point for legal information</p><h1>{section === 'Overview' ? 'Know your rights. Find your next step.' : section}</h1><p className="welcome-copy">Kenyan legal information grounded in the Constitution of Kenya, 2010.</p></div><div className="kenya-badge"><span>🇰🇪</span><span>Made for Kenya<br/><small>General information, not legal advice</small></span></div></div>
+      {section === 'Overview' && <>
+        <section className="hero-card"><div><span className="mini-label">START HERE</span><h2>Understand the law in plain language.</h2><p>Browse constitutional rights, practical guides, case references and local resource-finding tips.</p><button className="primary-button" onClick={() => setSection('FAQs')}>Explore legal help <span>→</span></button></div><div className="hero-art" aria-hidden="true"><div className="sun"/><div className="book">§</div><div className="art-caption">The Constitution<br/>is the supreme law</div></div></section>
+        <div className="feature-grid">{[['⚖','Find a lawyer','Browse directory profiles and contact an advocate directly.','Lawyers'],['▤','Understand your rights','Search key articles of the Constitution.','Overview'],['⌕','Learn court processes','Read plain-language preparation guides.','Court guides'],['✦','Ask the legal assistant','Get a limited, source-linked information response.','Legal assistant']].map(([icon,title,desc,target]) => <button className="feature-card" key={title} onClick={() => setSection(target as Section)}><span className="feature-icon">{icon}</span><b>{title}</b><span>{desc}</span><i>Explore →</i></button>)}</div>
+        <section className="section-heading"><div><p className="eyebrow">CONSTITUTIONAL REFERENCE</p><h2>Browse constitutional topics</h2></div><button className="text-button" onClick={() => setSection('Overview')}>View all topics</button></section>
+        <div className="browse-layout"><aside className="browse-sidebar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search topics or articles" aria-label="Search constitutional articles"/><div className="category-pills">{['All','Rights','Governance','Justice','Civic','Economy','Family','Security'].map((item) => <button key={item} className={category === item ? 'pill-active' : ''} onClick={() => setCategory(item)}>{item}</button>)}</div>{filteredArticles.map((article) => <button className={`topic-row ${selectedArticle.id === article.id ? 'topic-selected' : ''}`} key={article.id} onClick={() => setSelectedId(article.id)}><small>{article.article} · {article.category}</small><b>{article.title}</b></button>)}{!filteredArticles.length && <p className="muted">No matching articles.</p>}</aside><article className="topic-detail"><span className="source-tag">{selectedArticle.source}</span><h3>{selectedArticle.title}</h3><p>{selectedArticle.summary}</p><h4>In brief</h4><ul>{selectedArticle.keyPoints.map((point) => <li key={point}>{point}</li>)}</ul><a href="https://new.kenyalaw.org/akn/ke/act/2010/constitution" target="_blank" rel="noreferrer">Read the Constitution on Kenya Law ↗</a></article></div>
+      </>}
+      {section === 'Lawyers' && <section className="product-panel"><div className="notice"><b>Directory preview:</b> the profiles below are mock examples, not real or verified advocates. Do not rely on them to contact or select counsel. The live directory needs verified Law Society of Kenya records and consent.</div><div className="toolbar"><input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search practice area or county"/><select value={county} onChange={(e) => setCounty(e.target.value)}><option value="All">All counties</option>{counties.map((name) => <option key={name}>{name}</option>)}</select></div><div className="directory-grid">{lawyers.filter((l) => (county === 'All' || l.county === county) && `${l.name} ${l.practice} ${l.county}`.toLowerCase().includes(query.toLowerCase())).map((lawyer) => <article className="directory-card" key={lawyer.name}><div className="avatar">{lawyer.name.slice(-1)}</div><span className="mock-tag">MOCK PROFILE</span><h3>{lawyer.name}</h3><p>{lawyer.practice}</p><div className="lawyer-meta">📍 {lawyer.county}<br/>◉ {lawyer.languages}</div><button className="secondary-button" disabled>Contact details unavailable</button></article>)}</div><p className="muted">To launch a real directory, add verified advocate data, consent, update cadence and a correction/removal process.</p></section>}
+      {section === 'FAQs' && <section className="product-panel"><p className="muted">Concise general information. Rules and remedies depend on your circumstances; confirm current requirements with a qualified advocate.</p>{faqs.map(([questionText, response]) => <details className="faq-item" key={questionText}><summary>{questionText}<span>＋</span></summary><p>{response}</p></details>)}</section>}
+      {section === 'Case law' && <section className="product-panel"><div className="notice">Case references are starting points, not legal advice or a complete statement of the law. Read the full judgment and check subsequent treatment and current law.</div><div className="case-grid">{cases.map((item) => <article className="case-card" key={item.name}><span className="source-tag">KENYA LAW REFERENCE</span><h3>{item.name}</h3><b>{item.citation}</b><p>{item.note}</p><a href={`https://new.kenyalaw.org/search/?q=${encodeURIComponent(item.name)}`} target="_blank" rel="noreferrer">Search Kenya Law ↗</a></article>)}</div></section>}
+      {section === 'Court guides' && <section className="product-panel"><div className="notice">These are general preparation notes only—not procedural instructions. Court rules, filing systems, fees and deadlines can change. Confirm with the relevant court registry or an advocate.</div><div className="guide-grid">{guides.map((guide, index) => <article className="guide-card" key={guide.title}><span className="guide-number">0{index + 1}</span><h3>{guide.title}</h3><ol>{guide.steps.map((step) => <li key={step}>{step}</li>)}</ol></article>)}</div></section>}
+      {section === 'Counties' && <section className="product-panel"><p className="muted">Select a county to see safe ways to locate local services. This preview does not publish unverified addresses or phone numbers.</p><div className="county-grid">{counties.map((name) => <button className={county === name ? 'county-active' : ''} key={name} onClick={() => setCounty(name)}>{name}<span>→</span></button>)}</div><article className="county-resource"><span className="source-tag">{county.toUpperCase()} COUNTY</span><h3>Finding legal support in {county}</h3><p>Check the National Legal Aid Service and Law Society of Kenya official channels for current service availability, contacts and eligibility. You can also ask the nearest court registry about public information and referral services.</p><div className="resource-links"><a href="https://www.nlas.go.ke/" target="_blank" rel="noreferrer">National Legal Aid Service ↗</a><a href="https://lsk.or.ke/" target="_blank" rel="noreferrer">Law Society of Kenya ↗</a><a href="https://www.judiciary.go.ke/" target="_blank" rel="noreferrer">The Judiciary ↗</a></div></article></section>}
+      {section === 'Legal assistant' && <section className="assistant-layout"><div className="assistant-intro"><span className="feature-icon">✦</span><p className="eyebrow">LIMITED INFORMATION ASSISTANT</p><h2>A starting point, not a lawyer.</h2><p>This prototype uses a small set of curated content in your browser. It does not use a language model, review documents, or provide advice for individual cases.</p><div className="notice"><b>Protect your privacy.</b> Do not enter names, ID/passport numbers, contact details, case documents, health information or confidential facts.</div></div><div className="assistant-chat"><div className="chat-label">Ask about a general legal topic</div><textarea value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="For example: What does the Constitution say about fair hearing?" rows={5}/><button className="primary-button" onClick={askAssistant}>Get general information <span>→</span></button>{answer && <div className="assistant-answer"><b>General information</b><p>{answer}</p></div>}<p className="tiny-muted">For urgent or personal legal problems, contact a qualified Kenyan advocate or legal aid provider. Automated information can be incomplete or wrong.</p></div></section>}
+      <footer className="product-footer"><span>Haki · Kenyan legal information</span><span>Not legal advice · Verify laws, judgments and procedures from official sources</span><a href="https://new.kenyalaw.org/akn/ke/act/2010/constitution" target="_blank" rel="noreferrer">Constitution of Kenya, 2010 ↗</a></footer>
+    </main>
+    {authOpen && <div className="modal-backdrop" role="presentation" onClick={() => setAuthOpen(false)}><div className="auth-modal" role="dialog" aria-modal="true" aria-labelledby="auth-title" onClick={(e) => e.stopPropagation()}><button className="modal-close" aria-label="Close" onClick={() => setAuthOpen(false)}>×</button><span className="brand-mark">K</span><p className="eyebrow">DEMO ACCOUNT</p><h2 id="auth-title">{authMode}</h2><p className="muted">Sign-in is a local demo only. No account or password is sent to a server.</p><form onSubmit={(e) => { e.preventDefault(); const data = new FormData(e.currentTarget); setUser(String(data.get('email')).split('@')[0] || 'Guest'); setAuthOpen(false); }}><label>Email<input name="email" type="email" required placeholder="you@example.com"/></label><label>Password<input name="password" type="password" required minLength={6} placeholder="At least 6 characters"/></label><button className="primary-button" type="submit">Continue <span>→</span></button></form><button className="text-button" onClick={() => setAuthMode(authMode === 'Sign in' ? 'Create account' : 'Sign in')}>{authMode === 'Sign in' ? 'Create a demo account' : 'Already registered? Sign in'}</button><p className="tiny-muted">Demo only: credentials are not validated, persisted or securely stored. Add a secure authentication backend before production.</p></div></div>}
+  </div>;
 }
 
 export default App;

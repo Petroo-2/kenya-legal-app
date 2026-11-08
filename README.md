@@ -1,39 +1,30 @@
 # Kenya Legal App
 
-A Kenyan legal-information application built around the Constitution of Kenya, 2010. It provides general constitutional guidance for common legal topics, rights, and civic procedures in Kenya.
+A cross-platform legal-information product for Kenya, built around the Constitution of Kenya, 2010. The current repository contains web and Expo mobile prototypes.
 
-## Features
+## Product modules
 
-- Browse key constitutional articles by topic
-- Search articles by keyword
-- View legal summaries and rights explained in plain language
-- Explore justice, rights, governance, and civic participation topics
-- Built for both web and mobile
-- Includes a legal disclaimer that the app is informational only, not legal advice
+- Constitutional rights explorer with topic search and source references
+- Lawyer directory interface (mock profiles only; no real/verified listings yet)
+- Legal FAQ
+- Case-law reference cards linking to Kenya Law search
+- General court-preparation guides
+- County-by-county resource discovery with links to official institutions
+- Limited, rule-based legal information assistant (not an LLM and not legal advice)
+- Sign-in/create-account interface for demo only (no backend or secure account storage)
 
-## Tech stack
+## Start locally
 
-- Web: React + Vite + TypeScript
-- Mobile: Expo + React Native + TypeScript
+From the repository root, install the workspace dependencies with `npm install`. Run the web prototype using `npm run web` or the mobile app using `npm run mobile`.
 
-## Getting started
+## Important production gaps
 
-1. Install dependencies:
+The directory, authentication and assistant are prototypes. Before public launch, add a secure backend and real authentication, verify advocate status and obtain listing consent, maintain legal content with qualified Kenyan legal review, add privacy/security controls and a process for correcting or removing listings, and test accessibility and mobile builds. Do not submit confidential information to the demo assistant.
 
-   npm install
+## Legal notice
 
-2. Start the web app:
+This app is for general information only. It is not legal advice, does not assess individual facts, and does not create an advocate-client relationship. It does not guarantee that legislation, case law, contacts or court procedures are current. Confirm authoritative materials with Kenya Law, the Judiciary, the Law Society of Kenya, the National Legal Aid Service or a qualified Kenyan advocate.
 
-   npm run web
+## Constitutional source
 
-3. Start the mobile app:
-
-   npm run mobile
-
-## Important note
-
-This app is for general informational purposes only. It does not replace legal advice from a qualified Kenyan advocate or attorney.
-
-## Constitutional basis
-
-The app draws from the Constitution of Kenya, 2010, especially rights and governance provisions in Chapters Two, Three, Four, Five, and Six.
+[Constitution of Kenya, 2010 — Kenya Law](https://new.kenyalaw.org/akn/ke/act/2010/constitution)
